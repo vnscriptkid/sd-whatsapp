@@ -1,0 +1,2 @@
+### Connect to server 1 through websocket
+GET http://localhost:8081/ws

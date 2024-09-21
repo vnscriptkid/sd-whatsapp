@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+</head>
+<body>
+    <h2>Chat App</h2>
+    <div id="connectionInterface">
+        <label>User ID: <input type="text" id="userId"></label><br>
+        <label>Select Server:
+            <select id="serverSelect">
+                <option value="ws://localhost:8081/ws">Server 1 (8081)</option>
+                <option value="ws://localhost:8082/ws">Server 2 (8082)</option>
+            </select>
+        </label>
+        <button onclick="connectToServer()">Connect</button>
+    </div>
+    <div id="chatInterface" style="display: none;">
+        <label>To: <input type="text" id="to"></label><br>
+        <label>Message: <input type="text" id="content"></label><br>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <div>
+        <h3>Messages</h3>
+        <ul id="messages"></ul>
+    </div>
+
+    <script>
+        let socket;
+        let userId;
+
+        function connectToServer() {
+            userId = document.getElementById("userId").value;
+            if (!userId) {
+                alert("Please enter a User ID");
+                return;
+            }
+
+            const serverUrl = document.getElementById("serverSelect").value;
+            
+            // Append the User ID as a URL parameter
+            const wsUrl = `${serverUrl}?userId=${encodeURIComponent(userId)}`;
+            
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(event) {
+                console.log("Connected to: " + wsUrl);
+                document.getElementById("connectionInterface").style.display = "none";
+                document.getElementById("chatInterface").style.display = "block";
+            };
+
+            socket.onmessage = function(event) {
+                let msg = JSON.parse(event.data);
+                let li = document.createElement("li");
+                li.textContent = msg.from + ": " + msg.content;
+                document.getElementById("messages").appendChild(li);
+            };
+
+            socket.onerror = function(error) {
+                console.error("WebSocket Error: ", error);
+            };
+
+            socket.onclose = function(event) {
+                console.log("Disconnected from the server");
+                document.getElementById("connectionInterface").style.display = "block";
+                document.getElementById("chatInterface").style.display = "none";
+            };
+        }
+
+        function sendMessage() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                alert("Not connected to a server!");
+                return;
+            }
+
+            let to = document.getElementById("to").value;
+            let content = document.getElementById("content").value;
+            let message = {
+                from: userId,
+                to: to,
+                content: content
+            };
+            socket.send(JSON.stringify(message));
+        }
+    </script>
+</body>
+</html>
